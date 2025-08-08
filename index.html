@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Case Management Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f7;
+            color: #1d1d1f;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            color: #6e6e73;
+        }
+        
+        .drop-zone {
+            border: 3px dashed #007aff;
+            border-radius: 12px;
+            padding: 60px 20px;
+            text-align: center;
+            background: white;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .drop-zone:hover {
+            border-color: #0056b3;
+            background: #f8f9ff;
+        }
+        
+        .drop-zone.dragover {
+            border-color: #0056b3;
+            background: #f0f4ff;
+            transform: scale(1.02);
+        }
+        
+        .drop-zone-content {
+            pointer-events: none;
+        }
+        
+        .drop-icon {
+            font-size: 3rem;
+            color: #007aff;
+            margin-bottom: 20px;
+        }
+        
+        .drop-text {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        .drop-subtext {
+            color: #6e6e73;
+            font-size: 0.9rem;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .analysis-section {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #1d1d1f;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #007aff;
+            margin-bottom: 5px;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: #6e6e73;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e5e7;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        
+        tr:hover {
+            background: #f8f9ff;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .status-open { background: #fff3cd; color: #856404; }
+        .status-closed { background: #d1ecf1; color: #0c5460; }
+        .status-critical { background: #f8d7da; color: #721c24; }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007aff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .export-btn {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            margin-right: 10px;
+        }
+        
+        .export-btn:hover {
+            background: #0056b3;
+        }
+        
+        .export-btn.secondary {
+            background: #6c757d;
+        }
+        
+        .export-btn.secondary:hover {
+            background: #5a6268;
+        }
+        
+        .export-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: none;
+            gap: 10px;
+            z-index: 1000;
+        }
+        
+        .pdf-generating {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Case Management Analyzer</h1>
+            <p>Drop your case history file (.xls, .xlsx, .csv) to get instant insights</p>
+        </div>
+        
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-content">
+                <div class="drop-icon">📊</div>
+                <div class="drop-text">Drop your file here</div>
+                <div class="drop-subtext">or click to browse</div>
+            </div>
+            <input type="file" id="fileInput" class="file-input" accept=".csv,.xls,.xlsx">
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>Analyzing your data...</div>
+        </div>
+        
+        <div class="error" id="error"></div>
+        
+        <div class="export-controls" id="exportControls">
+            <button class="export-btn" onclick="exportToPDF()">📄 Export PDF Report</button>
+            <button class="export-btn secondary" onclick="exportAllData()">📊 Export All Data</button>
+        </div>
+        
+        <div class="pdf-generating" id="pdfGenerating">
+            <div>
+                <div class="spinner"></div>
+                <div>Generating PDF report...</div>
+            </div>
+        </div>
+        
+        <div class="analysis-section" id="summarySection">
+            <h2 class="section-title">📈 Summary Metrics</h2>
+            <div class="metrics-grid" id="metricsGrid"></div>
+        </div>
+        
+        <div class="analysis-section" id="openCasesSection">
+            <h2 class="section-title">🔥 Open Cases Analysis</h2>
+            <div id="openCasesContent"></div>
+        </div>
+        
+        <div class="analysis-section" id="ownersSection">
+            <h2 class="section-title">👥 Owner Performance</h2>
+            <div id="ownersContent"></div>
+        </div>
+        
+        <div class="analysis-section" id="patternsSection">
+            <h2 class="section-title">⚡ Key Patterns</h2>
+            <div id="patternsContent"></div>
+        </div>
+        
+        <div class="analysis-section" id="actionsSection">
+            <h2 class="section-title">🎯 Recommended Actions</h2>
+            <div id="actionsContent"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        let analysisData = null;
+        
+        // File handling
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('dragleave', handleDragLeave);
+        dropZone.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        }
+        
+        function handleDragLeave(e) {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        }
+        
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        }
+        
+        function showLoading() {
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            hideAnalysisSections();
+        }
+        
+        function hideLoading() {
+            loading.style.display = 'none';
+        }
+        
+        function showError(message) {
+            error.textContent = message;
+            error.style.display = 'block';
+            hideLoading();
+        }
+        
+        function hideAnalysisSections() {
+            document.querySelectorAll('.analysis-section').forEach(section => {
+                section.style.display = 'none';
+            });
+        }
+        
+        function showAnalysisSections() {
+            document.querySelectorAll('.analysis-section').forEach(section => {
+                section.style.display = 'block';
+            });
+            document.getElementById('exportControls').style.display = 'flex';
+        }
+        
+        function processFile(file) {
+            showLoading();
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let data;
+                    const arrayBuffer = e.target.result;
+                    
+                    if (file.name.toLowerCase().endsWith('.csv')) {
+                        // Handle CSV
+                        const text = new TextDecoder().decode(arrayBuffer);
+                        data = parseCSV(text);
+                    } else {
+                        // Handle Excel files
+                        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        data = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    }
+                    
+                    analyzeData(data);
+                } catch (err) {
+                    showError('Error processing file: ' + err.message);
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+        
+        function parseCSV(text) {
+            const lines = text.split('\n');
+            return lines.map(line => {
+                const result = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        result.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                result.push(current.trim());
+                return result;
+            });
+        }
+        
+        function analyzeData(rawData) {
+            try {
+                if (rawData.length < 2) {
+                    throw new Error('File appears to be empty or has no data rows');
+                }
+                
+                const headers = rawData[0];
+                const rows = rawData.slice(1).filter(row => row.some(cell => cell && cell.toString().trim()));
+                
+                // Normalize headers
+                const headerMap = {};
+                headers.forEach((header, index) => {
+                    const normalized = header.toString().toLowerCase().replace(/\s+/g, '').replace(/[\/\-]/g, '');
+                    headerMap[normalized] = index;
+                });
+                
+                // Extract data
+                const cases = {};
+                const owners = {};
+                const editors = {};
+                const statusTransitions = {};
+                
+                rows.forEach(row => {
+                    const caseNum = getCell(row, headerMap, ['casenumber', 'case', 'number']);
+                    const owner = getCell(row, headerMap, ['caseowner', 'owner']);
+                    const editor = getCell(row, headerMap, ['editedby', 'editor']);
+                    const status = getCell(row, headerMap, ['status']);
+                    const oldValue = getCell(row, headerMap, ['oldvalue', 'old']);
+                    const newValue = getCell(row, headerMap, ['newvalue', 'new']);
+                    const editDate = getCell(row, headerMap, ['editdate', 'date']);
+                    const opened = getCell(row, headerMap, ['datetimeopened', 'opened']);
+                    const closed = getCell(row, headerMap, ['datetimeclosed', 'closed']);
+                    
+                    if (!caseNum) return;
+                    
+                    if (!cases[caseNum]) {
+                        cases[caseNum] = {
+                            owner: owner,
+                            events: [],
+                            opened: opened,
+                            closed: closed,
+                            statusChanges: 0
+                        };
+                    }
+                    
+                    cases[caseNum].events.push({
+                        date: editDate,
+                        editor: editor,
+                        field: getCell(row, headerMap, ['field', 'fieldevent']),
+                        oldValue: oldValue,
+                        newValue: newValue
+                    });
+                    
+                    if (getCell(row, headerMap, ['field', 'fieldevent']) === 'Status') {
+                        cases[caseNum].statusChanges++;
+                        const transition = `${oldValue} → ${newValue}`;
+                        statusTransitions[transition] = (statusTransitions[transition] || 0) + 1;
+                    }
+                    
+                    if (owner) {
+                        owners[owner] = (owners[owner] || 0) + 1;
+                    }
+                    
+                    if (editor) {
+                        editors[editor] = (editors[editor] || 0) + 1;
+                    }
+                });
+                
+                // Analyze results
+                const totalCases = Object.keys(cases).length;
+                const openCases = Object.values(cases).filter(c => !c.closed);
+                const closedCases = Object.values(cases).filter(c => c.closed);
+                
+                const pingPongCases = openCases.filter(c => c.statusChanges >= 5);
+                const staleCases = openCases.filter(c => {
+                    // Simple stale detection - could be improved with date parsing
+                    return c.events.length < 3;
+                });
+                
+                analysisData = {
+                    totalCases,
+                    openCases: openCases.length,
+                    closedCases: closedCases.length,
+                    cases,
+                    owners,
+                    editors,
+                    statusTransitions,
+                    pingPongCases,
+                    staleCases
+                };
+                
+                renderAnalysis();
+                hideLoading();
+                showAnalysisSections();
+                
+            } catch (err) {
+                showError('Error analyzing data: ' + err.message);
+            }
+        }
+        
+        function getCell(row, headerMap, possibleKeys) {
+            for (const key of possibleKeys) {
+                if (headerMap[key] !== undefined && row[headerMap[key]]) {
+                    return row[headerMap[key]].toString().trim();
+                }
+            }
+            return '';
+        }
+        
+        function renderAnalysis() {
+            renderSummaryMetrics();
+            renderOpenCases();
+            renderOwnerPerformance();
+            renderPatterns();
+            renderRecommendedActions();
+        }
+        
+        function renderSummaryMetrics() {
+            const grid = document.getElementById('metricsGrid');
+            const closureRate = ((analysisData.closedCases / analysisData.totalCases) * 100).toFixed(1);
+            
+            grid.innerHTML = `
+                <div class="metric-card">
+                    <div class="metric-value">${analysisData.totalCases}</div>
+                    <div class="metric-label">Total Cases</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${analysisData.openCases}</div>
+                    <div class="metric-label">Open Cases</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${closureRate}%</div>
+                    <div class="metric-label">Closure Rate</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">${analysisData.pingPongCases.length}</div>
+                    <div class="metric-label">High Activity Cases</div>
+                </div>
+            `;
+        }
+        
+        function renderOpenCases() {
+            const content = document.getElementById('openCasesContent');
+            const openCasesList = Object.entries(analysisData.cases)
+                .filter(([id, data]) => !data.closed)
+                .sort((a, b) => b[1].statusChanges - a[1].statusChanges)
+                .slice(0, 20);
+            
+            if (openCasesList.length === 0) {
+                content.innerHTML = '<p>No open cases found.</p>';
+                return;
+            }
+            
+            const tableHTML = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Case ID</th>
+                                <th>Owner</th>
+                                <th>Status Changes</th>
+                                <th>Total Events</th>
+                                <th>Risk Level</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${openCasesList.map(([id, data]) => `
+                                <tr>
+                                    <td>${id}</td>
+                                    <td>${data.owner || 'Unassigned'}</td>
+                                    <td>${data.statusChanges}</td>
+                                    <td>${data.events.length}</td>
+                                    <td>
+                                        <span class="status-badge ${getRiskClass(data.statusChanges)}">
+                                            ${getRiskLevel(data.statusChanges)}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <button class="export-btn" onclick="exportOpenCases()">📋 Export Open Cases CSV</button>
+            `;
+            
+            content.innerHTML = tableHTML;
+        }
+        
+        function renderOwnerPerformance() {
+            const content = document.getElementById('ownersContent');
+            const ownerStats = Object.entries(analysisData.owners)
+                .map(([name, count]) => {
+                    const ownerCases = Object.values(analysisData.cases).filter(c => c.owner === name);
+                    const openCount = ownerCases.filter(c => !c.closed).length;
+                    return { name, total: count, open: openCount };
+                })
+                .sort((a, b) => b.open - a.open)
+                .slice(0, 15);
+            
+            const tableHTML = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Owner</th>
+                                <th>Total Activity</th>
+                                <th>Open Cases</th>
+                                <th>Workload Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${ownerStats.map(owner => `
+                                <tr>
+                                    <td>${owner.name}</td>
+                                    <td>${owner.total}</td>
+                                    <td>${owner.open}</td>
+                                    <td>
+                                        <span class="status-badge ${getWorkloadClass(owner.open)}">
+                                            ${getWorkloadStatus(owner.open)}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            content.innerHTML = tableHTML;
+        }
+        
+        function renderPatterns() {
+            const content = document.getElementById('patternsContent');
+            const topTransitions = Object.entries(analysisData.statusTransitions)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            const patternsHTML = `
+                <h3>Top Status Transitions</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Transition</th>
+                                <th>Frequency</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${topTransitions.map(([transition, count]) => `
+                                <tr>
+                                    <td>${transition}</td>
+                                    <td>${count}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <h3 style="margin-top: 30px;">High Activity Cases</h3>
+                <p>Cases with 5+ status changes may indicate process issues:</p>
+                <ul style="margin-top: 10px;">
+                    ${analysisData.pingPongCases.slice(0, 5).map(caseData => {
+                        const caseId = Object.keys(analysisData.cases).find(id => analysisData.cases[id] === caseData);
+                        return `<li>Case ${caseId}: ${caseData.statusChanges} status changes (Owner: ${caseData.owner || 'Unassigned'})</li>`;
+                    }).join('')}
+                </ul>
+            `;
+            
+            content.innerHTML = patternsHTML;
+        }
+        
+        function renderRecommendedActions() {
+            const content = document.getElementById('actionsContent');
+            const actions = generateRecommendations();
+            
+            const actionsHTML = `
+                <div style="display: grid; gap: 20px;">
+                    ${actions.map(action => `
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid ${action.color};">
+                            <h4 style="margin-bottom: 10px; color: #1d1d1f;">${action.title}</h4>
+                            <p style="margin-bottom: 10px; color: #6e6e73;">${action.description}</p>
+                            <div style="font-size: 0.9rem;">
+                                <strong>Priority:</strong> ${action.priority} | 
+                                <strong>Impact:</strong> ${action.impact}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            content.innerHTML = actionsHTML;
+        }
+        
+        function generateRecommendations() {
+            const actions = [];
+            
+            // Workload balancing
+            const overloadedOwners = Object.entries(analysisData.owners)
+                .map(([name, count]) => {
+                    const openCount = Object.values(analysisData.cases).filter(c => c.owner === name && !c.closed).length;
+                    return { name, open: openCount };
+                })
+                .filter(owner => owner.open > 10)
+                .sort((a, b) => b.open - a.open);
+            
+            if (overloadedOwners.length > 0) {
+                actions.push({
+                    title: 'Rebalance Workload',
+                    description: `${overloadedOwners[0].name} has ${overloadedOwners[0].open} open cases. Consider redistributing to other team members.`,
+                    priority: 'HIGH',
+                    impact: 'Immediate',
+                    color: '#ff6b6b'
+                });
+            }
+            
+            // High activity cases
+            if (analysisData.pingPongCases.length > 0) {
+                actions.push({
+                    title: 'Review High Activity Cases',
+                    description: `${analysisData.pingPongCases.length} cases have excessive status changes. Review process and customer communication.`,
+                    priority: 'MEDIUM',
+                    impact: 'Process Improvement',
+                    color: '#ffd43b'
+                });
+            }
+            
+            // Process optimization
+            const awaitingCustomer = Object.entries(analysisData.statusTransitions)
+                .find(([transition]) => transition.includes('Awaiting Customer'));
+            
+            if (awaitingCustomer && awaitingCustomer[1] > 50) {
+                actions.push({
+                    title: 'Improve Customer Communication',
+                    description: 'High frequency of "Awaiting Customer" transitions suggests communication delays. Consider automated follow-ups.',
+                    priority: 'MEDIUM',
+                    impact: 'Customer Experience',
+                    color: '#51cf66'
+                });
+            }
+            
+            // Default action if no specific issues
+            if (actions.length === 0) {
+                actions.push({
+                    title: 'Monitor and Maintain',
+                    description: 'No critical issues detected. Continue monitoring case flow and team performance.',
+                    priority: 'LOW',
+                    impact: 'Maintenance',
+                    color: '#74c0fc'
+                });
+            }
+            
+            return actions;
+        }
+        
+        function getRiskClass(statusChanges) {
+            if (statusChanges >= 10) return 'status-critical';
+            if (statusChanges >= 5) return 'status-open';
+            return 'status-closed';
+        }
+        
+        function getRiskLevel(statusChanges) {
+            if (statusChanges >= 10) return 'HIGH';
+            if (statusChanges >= 5) return 'MEDIUM';
+            return 'LOW';
+        }
+        
+        function getWorkloadClass(openCases) {
+            if (openCases >= 15) return 'status-critical';
+            if (openCases >= 10) return 'status-open';
+            return 'status-closed';
+        }
+        
+        function getWorkloadStatus(openCases) {
+            if (openCases >= 15) return 'OVERLOADED';
+            if (openCases >= 10) return 'HIGH';
+            if (openCases >= 5) return 'NORMAL';
+            return 'LOW';
+        }
+        
+        function exportOpenCases() {
+            const openCases = Object.entries(analysisData.cases)
+                .filter(([id, data]) => !data.closed)
+                .map(([id, data]) => ({
+                    'Case ID': id,
+                    'Owner': data.owner || 'Unassigned',
+                    'Status Changes': data.statusChanges,
+                    'Total Events': data.events.length,
+                    'Risk Level': getRiskLevel(data.statusChanges)
+                }));
+            
+            const csv = [
+                Object.keys(openCases[0]).join(','),
+                ...openCases.map(row => Object.values(row).join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'open_cases_analysis.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+        
+        // PDF Export Functions
+        async function exportToPDF() {
+            const pdfGenerating = document.getElementById('pdfGenerating');
+            pdfGenerating.style.display = 'flex';
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pageWidth = 210;
+                const pageHeight = 297;
+                const margin = 20;
+                let yPosition = margin;
+                
+                // Add title
+                pdf.setFontSize(20);
+                pdf.setFont(undefined, 'bold');
+                pdf.text('Case Management Analysis Report', margin, yPosition);
+                yPosition += 15;
+                
+                // Add timestamp
+                pdf.setFontSize(10);
+                pdf.setFont(undefined, 'normal');
+                pdf.text(`Generated: ${new Date().toLocaleString()}`, margin, yPosition);
+                yPosition += 20;
+                
+                // Summary Metrics
+                pdf.setFontSize(16);
+                pdf.setFont(undefined, 'bold');
+                pdf.text('Summary Metrics', margin, yPosition);
+                yPosition += 10;
+                
+                pdf.setFontSize(12);
+                pdf.setFont(undefined, 'normal');
+                const closureRate = ((analysisData.closedCases / analysisData.totalCases) * 100).toFixed(1);
+                
+                const summaryText = [
+                    `Total Cases: ${analysisData.totalCases}`,
+                    `Open Cases: ${analysisData.openCases}`,
+                    `Closed Cases: ${analysisData.closedCases}`,
+                    `Closure Rate: ${closureRate}%`,
+                    `High Activity Cases: ${analysisData.pingPongCases.length}`
+                ];
+                
+                summaryText.forEach(text => {
+                    pdf.text(text, margin, yPosition);
+                    yPosition += 8;
+                });
+                
+                yPosition += 10;
+                
+                // Top Open Cases
+                pdf.setFontSize(16);
+                pdf.setFont(undefined, 'bold');
+                pdf.text('Critical Open Cases', margin, yPosition);
+                yPosition += 10;
+                
+                const criticalCases = Object.entries(analysisData.cases)
+                    .filter(([id, data]) => !data.closed)
+                    .sort((a, b) => b[1].statusChanges - a[1].statusChanges)
+                    .slice(0, 10);
+                
+                pdf.setFontSize(10);
+                pdf.setFont(undefined, 'normal');
+                
+                // Table headers
+                const headers = ['Case ID', 'Owner', 'Status Changes', 'Events'];
+                const colWidths = [40, 50, 30, 30];
+                let xPos = margin;
+                
+                pdf.setFont(undefined, 'bold');
+                headers.forEach((header, i) => {
+                    pdf.text(header, xPos, yPosition);
+                    xPos += colWidths[i];
+                });
+                yPosition += 8;
+                
+                pdf.setFont(undefined, 'normal');
+                criticalCases.forEach(([id, data]) => {
+                    if (yPosition > pageHeight - 30) {
+                        pdf.addPage();
+                        yPosition = margin;
+                    }
+                    
+                    xPos = margin;
+                    const rowData = [id, data.owner || 'Unassigned', data.statusChanges.toString(), data.events.length.toString()];
+                    
+                    rowData.forEach((cell, i) => {
+                        const cellText = cell.length > 15 ? cell.substring(0, 12) + '...' : cell;
+                        pdf.text(cellText, xPos, yPosition);
+                        xPos += colWidths[i];
+                    });
+                    yPosition += 6;
+                });
+                
+                yPosition += 15;
+                
+                // Owner Workload
+                if (yPosition > pageHeight - 60) {
+                    pdf.addPage();
+                    yPosition = margin;
+                }
+                
+                pdf.setFontSize(16);
+                pdf.setFont(undefined, 'bold');
+                pdf.text('Owner Workload Analysis', margin, yPosition);
+                yPosition += 10;
+                
+                const ownerStats = Object.entries(analysisData.owners)
+                    .map(([name, count]) => {
+                        const ownerCases = Object.values(analysisData.cases).filter(c => c.owner === name);
+                        const openCount = ownerCases.filter(c => !c.closed).length;
+                        return { name, total: count, open: openCount };
+                    })
+                    .sort((a, b) => b.open - a.open)
+                    .slice(0, 10);
+                
+                pdf.setFontSize(10);
+                pdf.setFont(undefined, 'bold');
+                const ownerHeaders = ['Owner', 'Total Activity', 'Open Cases', 'Status'];
+                const ownerColWidths = [50, 30, 25, 35];
+                xPos = margin;
+                
+                ownerHeaders.forEach((header, i) => {
+                    pdf.text(header, xPos, yPosition);
+                    xPos += ownerColWidths[i];
+                });
+                yPosition += 8;
+                
+                pdf.setFont(undefined, 'normal');
+                ownerStats.forEach(owner => {
+                    if (yPosition > pageHeight - 30) {
+                        pdf.addPage();
+                        yPosition = margin;
+                    }
+                    
+                    xPos = margin;
+                    const status = owner.open >= 15 ? 'OVERLOADED' : owner.open >= 10 ? 'HIGH' : owner.open >= 5 ? 'NORMAL' : 'LOW';
+                    const ownerRowData = [
+                        owner.name.length > 20 ? owner.name.substring(0, 17) + '...' : owner.name,
+                        owner.total.toString(),
+                        owner.open.toString(),
+                        status
+                    ];
+                    
+                    ownerRowData.forEach((cell, i) => {
+                        pdf.text(cell, xPos, yPosition);
+                        xPos += ownerColWidths[i];
+                    });
+                    yPosition += 6;
+                });
+                
+                yPosition += 15;
+                
+                // Recommendations
+                if (yPosition > pageHeight - 80) {
+                    pdf.addPage();
+                    yPosition = margin;
+                }
+                
+                pdf.setFontSize(16);
+                pdf.setFont(undefined, 'bold');
+                pdf.text('Key Recommendations', margin, yPosition);
+                yPosition += 10;
+                
+                const recommendations = generateRecommendations();
+                
+                pdf.setFontSize(12);
+                recommendations.forEach((rec, index) => {
+                    if (yPosition > pageHeight - 40) {
+                        pdf.addPage();
+                        yPosition = margin;
+                    }
+                    
+                    pdf.setFont(undefined, 'bold');
+                    pdf.text(`${index + 1}. ${rec.title}`, margin, yPosition);
+                    yPosition += 8;
+                    
+                    pdf.setFont(undefined, 'normal');
+                    // Wrap text for description
+                    const descLines = pdf.splitTextToSize(rec.description, pageWidth - 2 * margin);
+                    descLines.forEach(line => {
+                        pdf.text(line, margin + 5, yPosition);
+                        yPosition += 6;
+                    });
+                    
+                    pdf.setFontSize(10);
+                    pdf.text(`Priority: ${rec.priority} | Impact: ${rec.impact}`, margin + 5, yPosition);
+                    yPosition += 12;
+                    pdf.setFontSize(12);
+                });
+                
+                // Save the PDF
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+                pdf.save(`case-analysis-report-${timestamp}.pdf`);
+                
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Error generating PDF report. Please try again.');
+            } finally {
+                pdfGenerating.style.display = 'none';
+            }
+        }
+        
+        function exportAllData() {
+            const allData = {
+                summary: {
+                    totalCases: analysisData.totalCases,
+                    openCases: analysisData.openCases,
+                    closedCases: analysisData.closedCases,
+                    closureRate: ((analysisData.closedCases / analysisData.totalCases) * 100).toFixed(1)
+                },
+                openCases: Object.entries(analysisData.cases)
+                    .filter(([id, data]) => !data.closed)
+                    .map(([id, data]) => ({
+                        caseId: id,
+                        owner: data.owner || 'Unassigned',
+                        statusChanges: data.statusChanges,
+                        totalEvents: data.events.length,
+                        riskLevel: getRiskLevel(data.statusChanges)
+                    })),
+                ownerStats: Object.entries(analysisData.owners)
+                    .map(([name, count]) => {
+                        const ownerCases = Object.values(analysisData.cases).filter(c => c.owner === name);
+                        const openCount = ownerCases.filter(c => !c.closed).length;
+                        return {
+                            name,
+                            totalActivity: count,
+                            openCases: openCount,
+                            workloadStatus: getWorkloadStatus(openCount)
+                        };
+                    }),
+                statusTransitions: Object.entries(analysisData.statusTransitions)
+                    .map(([transition, count]) => ({ transition, count }))
+                    .sort((a, b) => b.count - a.count),
+                recommendations: generateRecommendations()
+            };
+            
+            const jsonStr = JSON.stringify(allData, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+            a.download = `case-analysis-data-${timestamp}.json`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
